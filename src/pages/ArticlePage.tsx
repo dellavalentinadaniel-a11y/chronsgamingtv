@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { articleService } from '../services/articleService';
+import { SEO } from '../components/SEO';
 import { Article } from '../types';
 import { ArrowLeft, Gamepad2, Monitor, Smartphone, Tv, Loader2, Calendar } from 'lucide-react';
 import { ScoreBadge } from '../components/ScoreBadge';
@@ -22,43 +23,13 @@ export function ArticlePage() {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const { data, error: fetchError } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (fetchError) throw fetchError;
+        const data = await articleService.getArticleById(id);
 
         if (data) {
-          // Format date from ISO string
-          const dateStr = new Intl.DateTimeFormat('es-ES', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }).format(new Date(data.created_at));
-
-          const currentArticle = { 
-            id: data.id, 
-            title: data.title,
-            excerpt: data.excerpt,
-            content: data.content,
-            category: data.category,
-            imageUrl: data.image_url,
-            author: data.author,
-            authorId: data.author_id,
-            commentsCount: data.comments_count,
-            tags: data.tags,
-            score: data.score,
-            platform: data.platform,
-            date: dateStr,
-            createdAt: data.created_at
-          } as Article;
-
-          setArticle(currentArticle);
+          setArticle(data);
 
           // Fetch related articles
-          fetchRelatedArticles(currentArticle);
+          fetchRelatedArticles(data);
         } else {
           setError("El artículo no existe o ha sido eliminado.");
         }
@@ -72,28 +43,22 @@ export function ArticlePage() {
 
     const fetchRelatedArticles = async (currentArticle: Article) => {
       try {
-        const { data, error: relatedError } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('category', currentArticle.category)
-          .limit(10);
+        const data = await articleService.getArticlesByCategory(currentArticle.category);
         
-        if (relatedError) throw relatedError;
-
-        let related: Article[] = (data || [])
+        let related = data
           .filter(item => item.id !== currentArticle.id)
           .map(item => ({
             id: item.id,
             title: item.title,
             excerpt: item.excerpt,
             category: item.category,
-            imageUrl: item.image_url,
+            imageUrl: item.imageUrl,
             author: item.author,
-            commentsCount: item.comments_count,
+            commentsCount: item.commentsCount,
             tags: item.tags,
             score: item.score,
             platform: item.platform,
-            createdAt: item.created_at
+            createdAt: item.createdAt
           } as Article));
 
         // Sort by tag overlap if tags exist
@@ -152,6 +117,20 @@ export function ArticlePage() {
 
   return (
     <article className="min-h-screen bg-zinc-950 pb-20">
+      <SEO
+        title={article.title}
+        description={article.excerpt}
+        imageUrl={article.imageUrl}
+        type="article"
+        article={{
+          publishedTime: article.createdAt,
+          author: article.author,
+          tags: article.tags,
+          section: article.category,
+          ratingValue: article.category === 'Análisis' ? article.score : undefined,
+          ratingMax: 10
+        }}
+      />
       {/* Hero Section */}
       <div className="relative w-full h-[50vh] md:h-[70vh] min-h-[400px]">
         <img 

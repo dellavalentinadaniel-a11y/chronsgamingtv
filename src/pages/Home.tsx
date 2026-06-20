@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { articleService } from '../services/articleService';
 import { Hero } from '../components/Hero';
 import { ArticleCard } from '../components/ArticleCard';
 import { Sidebar } from '../components/Sidebar';
-import { FEATURED_ARTICLE, LATEST_NEWS } from '../constants';
+import { SEO } from '../components/SEO';
+import { FEATURED_ARTICLE } from '../constants';
 import { Article } from '../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -18,32 +19,8 @@ export function Home() {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const { data, error } = await supabase
-          .from('articles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const mappedArticles: Article[] = (data || []).map(item => ({
-          id: item.id,
-          title: item.title,
-          excerpt: item.excerpt,
-          imageUrl: item.image_url,
-          category: item.category,
-          author: item.author,
-          score: item.score,
-          commentsCount: item.comments_count,
-          platform: item.platform,
-          tags: item.tags,
-          date: new Date(item.created_at).toLocaleDateString('es-ES', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          })
-        }));
-
-        setArticles(mappedArticles);
+        const data = await articleService.getAllArticles();
+        setArticles(data);
       } catch (error) {
         console.error("Error fetching articles:", error);
       } finally {
@@ -52,29 +29,18 @@ export function Home() {
     };
 
     fetchArticles();
-
-    // Set up realtime subscription
-    const channel = supabase
-      .channel('public:articles')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'articles' }, () => {
-        fetchArticles();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
-  // Combine fetched articles with mock data for display if needed
-  const displayArticles = [...articles, ...LATEST_NEWS];
+  // Combinamos con las constantes locales por si hiciera falta de respaldo, 
+  // pero ya la base de datos local articlesData incluye todos los contenidos premium.
+  const displayArticles = articles;
   
-  // Find the article with the most comments to feature it (or default to newest if tie)
+  // Encontramos el artículo con más comentarios para destacarlo
   const featured = displayArticles.length > 0 ? displayArticles.reduce((prev, current) => {
     return (current.commentsCount || 0) > (prev.commentsCount || 0) ? current : prev;
   }, displayArticles[0]) : FEATURED_ARTICLE;
 
-  // Filter out the featured article from the rest
+  // Filtramos el destacado del resto
   const restArticles = displayArticles.filter(a => a.id !== featured.id).slice(0, displayCount - 1);
 
   const handleLoadMore = () => {
@@ -83,6 +49,10 @@ export function Home() {
 
   return (
     <main>
+      <SEO 
+        title="Inicio" 
+        description="Bienvenidos a ChronsGamingtv, tu portal de referencia sobre videojuegos. Encuentra las últimas noticias, guías de juegos populares, trucos y análisis detallados en español."
+      />
       <Hero />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

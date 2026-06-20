@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { articleService } from '../services/articleService';
+import { SEO } from '../components/SEO';
 import { Article } from '../types';
 import { Gamepad2, Monitor, Smartphone, Tv, Loader2, BookOpen } from 'lucide-react';
 import { ScoreBadge } from '../components/ScoreBadge';
@@ -17,53 +18,16 @@ export function GuidesPage() {
 
   useEffect(() => {
     const fetchGuides = async () => {
-      const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('category', 'Guías')
-        .order('created_at', { ascending: false });
-
-      if (error) {
+      try {
+        const data = await articleService.getArticlesByCategory('Guías');
+        setAllGuides(data);
+      } catch (error) {
         console.error("Error fetching guides:", error);
-      } else {
-        const fetched = (data || []).map(item => ({
-          id: item.id,
-          title: item.title,
-          excerpt: item.excerpt,
-          content: item.content,
-          category: item.category,
-          imageUrl: item.image_url,
-          author: item.author,
-          authorId: item.author_id,
-          commentsCount: item.comments_count,
-          tags: item.tags,
-          score: item.score,
-          platform: item.platform,
-          createdAt: item.created_at
-        } as Article));
-        setAllGuides(fetched);
       }
       setLoading(false);
     };
 
     fetchGuides();
-
-    // Realtime subscription
-    const channel = supabase
-      .channel('guides_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'articles',
-        filter: "category=eq.Guías" 
-      }, () => {
-        fetchGuides();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const availableTags = ['Todas', ...Array.from(new Set(allGuides.flatMap(r => r.tags || []))).sort()];
@@ -93,6 +57,10 @@ export function GuidesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <SEO 
+        title="Guías, Trucos y Tutoriales de Videojuegos" 
+        description="Domina tus videojuegos favoritos con nuestras guías completas paso a paso, trucos ocultos, consejos de nivelación y tutoriales detallados para todos los sistemas."
+      />
       <div className="mb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Guías y Trucos</h1>
         <p className="text-zinc-400 max-w-2xl mx-auto">
