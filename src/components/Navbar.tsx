@@ -113,13 +113,13 @@ export function Navbar() {
                   </button>
                 </div>
               ) : (
-                <button 
-                  onClick={handleLogin}
+                <Link 
+                  to="/entrar"
                   className="hidden md:flex items-center gap-1 text-sm font-medium text-zinc-300 hover:text-white transition-colors border-l border-zinc-800 pl-4"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Entrar</span>
-                </button>
+                </Link>
               )}
 
               <button 
@@ -236,13 +236,14 @@ export function Navbar() {
                     </button>
                   </>
                 ) : (
-                  <button 
-                    onClick={handleLogin}
+                  <Link 
+                    to="/entrar"
+                    onClick={() => setIsMenuOpen(false)}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-800"
                   >
                     <LogIn className="w-5 h-5" />
                     Iniciar sesión
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>

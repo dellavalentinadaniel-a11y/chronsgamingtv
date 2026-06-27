@@ -20,6 +20,7 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import { CookiePolicy } from './pages/CookiePolicy';
 import { ProfilePage } from './pages/ProfilePage';
+import { EntrarPage } from './pages/EntrarPage';
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/terminos" element={<TermsOfService />} />
             <Route path="/cookies" element={<CookiePolicy />} />
             <Route path="/perfil" element={<ProfilePage />} />
+            <Route path="/entrar" element={<EntrarPage />} />
           </Routes>
         </div>
 

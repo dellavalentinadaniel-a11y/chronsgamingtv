@@ -4,6 +4,8 @@ import { Image as ImageIcon, Save, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { MediaLibrary } from '../components/MediaLibrary';
+import { RichTextEditor } from '@seogrowthers/rich-text-editor';
+import '@seogrowthers/rich-text-editor/dist/style.css';
 
 export function Editor() {
   const navigate = useNavigate();
@@ -21,6 +23,26 @@ export function Editor() {
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleUploadImage = async (file: File) => {
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data, error } = await supabase.storage
+      .from('article-images')
+      .upload(fileName, file);
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('article-images')
+      .getPublicUrl(fileName);
+      
+    return publicUrl;
+  };
+
+  const handleEditorError = ({ title, message }: { title: string, message: string }) => {
+    console.error(`${title}: ${message}`);
+    setError(`${title}: ${message}`);
+  };
 
   useEffect(() => {
     // Redirect if not logged in
@@ -300,15 +322,17 @@ Sin entrar en spoilers, la historia de *Rebirth* maneja un equilibrio delicado. 
         </div>
 
         {/* Content */}
-        <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-2">Contenido</label>
-          <textarea 
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={15}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
-            placeholder="Escribe el contenido del artículo aquí..."
-          />
+        <div className="prose prose-invert max-w-none">
+          <label className="block text-sm font-medium text-zinc-400 mb-2 not-prose">Contenido</label>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500 transition-colors">
+            <RichTextEditor 
+              content={content} 
+              onChange={setContent}
+              onUploadImage={handleUploadImage}
+              onError={handleEditorError}
+              placeholder="Escribe el cuerpo de tu artículo aquí..."
+            />
+          </div>
         </div>
 
         {/* Submit */}
